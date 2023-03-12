@@ -1,0 +1,27 @@
+﻿@page "/"
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.Extensions.Localization;
+@using StoriesWeb.Data;
+@inject IStringLocalizer<Index> t;
+
+@inject ILogger<Index> Logger
+@inject NavigationManager Navigation
+@inject ApplicationDbContext _dbContext
+
+<PageTitle>@t["Application"]</PageTitle>
+
+@code {
+
+  protected override async Task OnInitializedAsync()
+  {
+    if (!await _dbContext.Users.AnyAsync())
+        try
+        {
+            Navigation.NavigateTo("FirstRun");
+        }
+        catch {}
+  }
+
+ 
+}
+

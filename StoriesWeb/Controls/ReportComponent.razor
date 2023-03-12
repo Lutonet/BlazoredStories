@@ -1,0 +1,34 @@
+﻿@inject IStringLocalizer<Index> t;
+
+
+@if (Report.Type == ReportTypes.notice)
+{
+  <MudChip>@t["Notice"]</MudChip>
+}
+@if (Report.Type == ReportTypes.info)
+{
+  <MudChip Color="Color.Info">@t["Information"]</MudChip>
+}
+@if (Report.Type == ReportTypes.success)
+{
+  <MudChip Color="Color.Success">@t["Success"]</MudChip>
+
+}
+@if (Report.Type == ReportTypes.warning)
+{
+  <MudChip Color="Color.Warning">@t["Warning"]</MudChip>
+}
+@if (Report.Type == ReportTypes.error)
+{
+  <MudChip Color="Color.Error">@t["Error"]</MudChip>
+}
+  @t[Report.Text]
+  <br />
+
+@code {
+
+    [Parameter]
+    public Report Report { get; set; } = new();
+
+
+}

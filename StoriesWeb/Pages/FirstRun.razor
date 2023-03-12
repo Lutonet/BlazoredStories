@@ -1,0 +1,258 @@
+﻿@page "/FirstRun"
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.Extensions.Localization;
+@using StoriesWeb.Data;
+@using StoriesWeb.Services;
+@inject IStringLocalizer<Index> t
+@inject ILogger<FirstRun> Logger
+@inject IFirstRunService _service
+@inject NavigationManager Navigation
+@inject ApplicationDbContext _dbContext
+
+<MudText Typo="Typo.h4" Style="text-align: center" Class="p-4">@t["First Run"]</MudText>
+
+<MudGrid>
+    <MudItem sm="7" xs="12">
+    @if (showForm)
+    {
+        <ApplicationSettingsComponent />
+    }
+    </MudItem>
+    <MudItem id="output" sm="5" xs="12">
+        <MudPaper Class="pa-3 ma-3" Elevation="3">
+            @foreach(var report in reports)
+            {
+                <ReportComponent Report=@report />      
+            }
+
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+      /*
+      * 1. Record countries to the table 
+      * 
+      */
+  private List<Report> reports = new List<Report>();
+  private int stage = 0;
+  bool continueInstallation = true;
+  bool showForm = false;
+
+  protected override async Task OnInitializedAsync()
+  {
+
+    Logger.LogInformation("First Run page opened");
+    if (await _dbContext.Users.AnyAsync())
+      Navigation.NavigateTo("Index");
+
+
+    reports.Add(
+      new Report()
+        {
+          Type = ReportTypes.notice,
+          Text = t["Starting installation"]
+        });
+    reports.Add(
+        new Report()
+        {
+          Type = ReportTypes.info,
+          Text = t["Installing table of countries"]
+        });
+    StateHasChanged();
+    if (continueInstallation) 
+    {
+      ApiResponse<string> countriesResult = await _service.CreateCountries();
+      if(countriesResult.Successful)
+      {
+        reports.Add(
+            new Report()
+          {
+            Type = ReportTypes.success,
+            Text = t[countriesResult.Data]
+          });
+      }
+      else
+      {
+        reports.Add(
+            new Report()
+          {
+              Type = ReportTypes.error,
+              Text = t[countriesResult.ErrorMessage]
+          });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+    }
+    if (continueInstallation)
+    {
+      reports.Add(
+     new Report()
+       {
+         Type = ReportTypes.info,
+         Text = t["Installing table of Age restrictions"]
+       });
+      StateHasChanged();
+      ApiResponse<string> ageResult = await _service.CreateAgeRestrictions();
+      if (ageResult.Successful)
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.success,
+              Text = t[ageResult.Data]
+            });
+      }
+      else
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.error,
+              Text = t[ageResult.ErrorMessage]
+            });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+
+    }
+
+    if (continueInstallation)
+    {
+      reports.Add(
+     new Report()
+       {
+         Type = ReportTypes.info,
+         Text = t["Installing table of category groups"]
+       });
+      StateHasChanged();
+      ApiResponse<string> categoryGroupsResult = await _service.CreateCategoryGroups();
+      if (categoryGroupsResult.Successful)
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.success,
+              Text = t[categoryGroupsResult.Data]
+            });
+      }
+      else
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.error,
+              Text = t[categoryGroupsResult.ErrorMessage]
+            });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+    }
+
+    if (continueInstallation)
+    {
+      reports.Add(
+   new Report()
+   {
+     Type = ReportTypes.info,
+     Text = t["Installing table of categories"]
+   });
+      StateHasChanged();
+      ApiResponse<string> categoriesResult = await _service.CreateCategories();
+      if (categoriesResult.Successful)
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.success,
+              Text = t[categoriesResult.Data]
+            });
+      }
+      else
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.error,
+              Text = t[categoriesResult.ErrorMessage]
+            });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+    }
+
+    if (continueInstallation)
+    {
+      reports.Add(
+   new Report()
+   {
+     Type = ReportTypes.info,
+     Text = t["Installing table of languages"]
+   });
+      StateHasChanged();
+      ApiResponse<string> languagesResult = await _service.CreateLanguagesTable();
+      if (languagesResult.Successful)
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.success,
+              Text = t[languagesResult.Data]
+            });
+      }
+      else
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.error,
+              Text = t[languagesResult.ErrorMessage]
+            });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+    }
+
+    if (continueInstallation)
+    {
+      reports.Add(
+   new Report()
+   {
+     Type = ReportTypes.info,
+     Text = t["Installing default roles"]
+   });
+      StateHasChanged();
+      ApiResponse<string> rolesResult = await _service.CreateDefaultRoles();
+      if (rolesResult.Successful)
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.success,
+              Text = t[rolesResult.Data]
+            });
+      }
+      else
+      {
+        reports.Add(
+          new Report()
+            {
+              Type = ReportTypes.error,
+              Text = t[rolesResult.ErrorMessage]
+            });
+        continueInstallation = false;
+      }
+      StateHasChanged();
+    }
+    if (continueInstallation)
+    {
+      showForm = true;
+      StateHasChanged();
+    }
+
+
+    await base.OnInitializedAsync();
+  }
+
+  delegate ApiResponse<string> InstallAdminDelegate();
+}

@@ -1,0 +1,207 @@
+﻿@using MailKit.Security;
+
+@using StoriesWeb.Models.Dto;
+@using StoriesWeb.Services;
+@using System.ComponentModel.DataAnnotations;
+@using System.Text.RegularExpressions;
+@inject IStringLocalizer<ApplicationSetup> t;
+@inject IEmailService email;
+@inject ApplicationDbContext _context;
+
+<MudPaper Class="pa-4 ma-3">
+    <MudForm @ref="settingsForm" @bind-IsValid="@success" @bind-Errors="@errors">
+        <MudText Typo="Typo.h5" Class="text-center">@t["Application Settings"]</MudText>
+        <MudDivider Class="mt-2"/>
+        <MudGrid>
+            <MudItem xs="12" sm="6" Class="pa-3 mt-3">
+                <MudTextField T="string" @bind-value="@model.ApplicationName" Label=@t["Application Name"] Required="true" RequiredError=@t["Application name is required"] />
+                <MudCheckBox @bind-Checked="@model.TranslateName" Size="Size.Medium" Color="Color.Primary">@t["Translate application name"]</MudCheckBox>
+                <MudDivider Class="mt-2" />
+                <MudText Typo="Typo.h5" Class="text-center m-2">@t["SMTP Settings"]</MudText>
+                <MudDivider Class="mt-2" />
+                <MudTextField T="string" @bind-value="@model.SmtpServer" Label=@t["SMTP Server"] Required="true" RequiredError=@t["SMTP server is required"] />
+                <MudNumericField T="int" @bind-value="@model.SmtpPort" Label=@t["SMTP Port"] Required="true" RequiredError=@t["SMTP port is required"] InputType="InputType.Number"/>            
+                <MudTextField T="string" @bind-Value="@model.EmailFrom" Label=@t["Application Email"] Required="true" RequiredError=@t["Application Email is required"] InputType="InputType.Email" />
+                <MudSelect T="SecureSocketOptions" Label=@t["SMTP Security"] @bind-Value="@model.SecureSocketOptions" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelectItem Value="@SecureSocketOptions.Auto" />
+                    <MudSelectItem Value="@SecureSocketOptions.StartTls" />
+                    <MudSelectItem Value="@SecureSocketOptions.StartTlsWhenAvailable" />
+                    <MudSelectItem Value="@SecureSocketOptions.SslOnConnect" />
+                    <MudSelectItem Value="@SecureSocketOptions.None" />
+                </MudSelect>
+                <MudDivider Class="mt-2" />
+                <MudCheckBox @bind-Checked="@model.UseAuthentication" Size="Size.Medium" Color="Color.Primary">@t["Use Authentication for SMTP"]</MudCheckBox>
+                @if(model.UseAuthentication)
+                {
+                    <MudTextField T="string" @bind-Value="@model.SmtpUser" Label=@t["Smtp user"] Required="false" />
+                    <MudTextField T="string" @bind-Value="@model.SmtpPassword" Label=@t["Smtp pasword"] Required="false" InputType="InputType.Password"  />
+                }
+                <MudPaper Class="pa-4 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@(async () => await TestSmtp())">@t["TestSMTP"]</MudButton>
+          @if(showSuccess)
+          {
+           
+            <div style="margin: 10px;">
+              <MudAlert Severity="Severity.Success">
+                @t["Test successful"]
+              </MudAlert>
+            </div>
+          }
+          @if(showError)
+          {
+            
+            <div style="margin: 10px;">
+                <MudAlert Severity="Severity.Error">
+                    @errorMessage
+                </MudAlert>
+            </div>
+          }
+          @if(testing)
+          {
+            <div style="margin: 10px;">
+              <MudAlert Severity="Severity.Info">
+                @t["Testing"]
+              </MudAlert>
+            </div>
+          }
+        </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" Class="pa-3 mt-3">
+                @if (showSuccess)
+        {
+          <MudTextField T="string" @bind-value="@model.Email" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] Validation="@(new EmailAddressAttribute() {ErrorMessage = $"{t["The email address is invalid"]}" })" />
+          <MudTextField T="string" @bind-value="@model.Password" Label=@t["Password"] @ref="pwd" Required="true" RequiredError=@t["Password is required"] Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" InputType="InputType.Password" />
+          <MudTextField T="string" @bind-value="@passwordCheck" Label=@t["Password again"] Required="true" RequiredError=@t["Password again is required"] InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+          <MudTextField T="string" @bind-value="@model.FirstName" Label=@t["Firstname"] Required="true" RequiredError=@t["Firstname is required"] />
+          <MudTextField T="string" @bind-value="@model.LastName" Label=@t["Lastname"] Required="true" RequiredError=@t["Lastname is required"] />
+          <MudTextField T="string" @bind-value="@model.DisplayedName" Label=@t["Displayedname"] Required="true" RequiredError=@t["Displayedname is required"] />
+          <MudDatePicker Label=@t["Birthdate"] @bind-Date="@model.BirthDate" />
+          <MudSelect @bind-Value="@model.CountryId" Label=@t["Country"] Required="true" RequiredError=@t["Country is required"]>
+            @foreach(var country in countries)
+            {
+              <MudSelectItem Value="@country.Id">@country.CountryName</MudSelectItem>
+            }
+          </MudSelect>
+          <MudFileUpload T="IBrowserFile" For="@(() => model.Picture)" 
+              @bind-Files="@model.Picture"
+              Accept=".jpg,.jpeg,.png,.gif">
+            <ButtonTemplate>
+              <MudButton HtmlTag="label"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                         for="@context">
+                @t["Add profile picture"]
+                
+              </MudButton>
+              @if(model.Picture != null)
+              {
+                <MudList>
+                  <MudListItem Icon="@Icons.Material.Filled.AttachFile" @key="@model.Picture">
+                      @model.Picture.Name <code>@model.Picture.Size bytes</code>
+                    </MudListItem>
+                </MudList>
+              }
+            </ButtonTemplate>
+          </MudFileUpload>
+          <MudDivider Class="mt-3 mb-3"></MudDivider>
+          <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false" OnClick="@(async () => await RegisterAdmin())">@t["Save"]</MudButton>
+        }
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+</MudPaper>
+
+@code {
+  bool success;
+  string[] errors = { };
+  MudTextField<string> pwd;
+  MudForm settingsForm;
+  bool showError = false;
+  bool testing = false;
+  public List<Country> countries = new();
+  bool showSuccess = false;
+  bool showSecondForm = false;
+  string errorMessage = string.Empty;
+  string passwordCheck = string.Empty;
+  InstallationDto model = new InstallationDto();
+
+  private IEnumerable<string> PasswordStrength(string pw)
+  {
+    if (string.IsNullOrWhiteSpace(pw))
+    {
+      yield return t["Password is required"];
+      yield break;
+    }
+    if (pw.Length < 8)
+      yield return t["Password must be at least of length 8"];
+    if (!Regex.IsMatch(pw, @"[A-Z]"))
+      yield return t["Password must contain at least one capital letter"];
+    if (!Regex.IsMatch(pw, @"[a-z]"))
+      yield return t["Password must contain at least one lowercase letter"];
+    if (!Regex.IsMatch(pw, @"[0-9]"))
+      yield return t["Password must contain at least one digit"];
+  }
+
+  private string PasswordMatch(string arg)
+  {
+    if (pwd.Value != arg)
+      return t["Passwords don't match"];
+    return null;
+  }
+
+  public async Task RegisterAdmin()
+  {
+    errors.Append("test");
+    await settingsForm.Validate();
+    if (errors.Length == 0)
+    {
+      //try to register user
+    }
+  }
+
+  public async Task TestSmtp()
+  {
+    testing = true;
+    showError = false;
+    showSuccess = false;
+    StateHasChanged();
+    var result = await CheckSmtp();
+    testing = false;
+    if (result.Successful)
+    {
+      showError = false;
+      showSuccess = true;
+      showSecondForm = true;
+      await GetCountries();
+
+    }
+    else
+    {
+      showSuccess = false;
+      showError = true;
+      errorMessage = result.ErrorMessage;
+    }
+    StateHasChanged();
+
+  }
+
+  public async Task GetCountries()
+  {
+      countries = await _context.Countries.OrderBy(s => s.CountryName).ToListAsync();
+  }
+
+  public async Task<ApiResponse<object>> CheckSmtp(){
+    return await email.TestSettings(new SmtpSettingsModel()
+    {
+        EmailFrom = model.EmailFrom,
+        SmtpServer = model.SmtpServer,
+        SmtpPort = model.SmtpPort,
+        SecureSocketOptions = model.SecureSocketOptions,
+        UseAuthentication = model.UseAuthentication,
+        SmtpUser = model.SmtpUser,
+        SmtpPassword = model.SmtpPassword
+    }, "sparenica@outlook.com");
+    
+  }
+}

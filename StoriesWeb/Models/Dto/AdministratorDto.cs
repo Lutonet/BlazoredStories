@@ -1,0 +1,15 @@
+﻿namespace StoriesWeb.Models.Dto
+{
+  public class AdministratorDto
+  {
+    public string? DisplayedName { get; set; } = "Lord of the server";
+    public string FirstName { get; set; } = "Server";
+    public string LastName { get; set; } = "Administrator";
+    public string Email { get; set; }
+    public string Password { get; set; }
+    public DateTime BirthDate { get; set; }
+    public int CountryId { get; set; }
+    public IFormFile? Picture { get; set; }
+    public string? PictureUrl { get; set; }
+  }
+}
