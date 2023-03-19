@@ -1,0 +1,295 @@
+﻿@inject IStringLocalizer<RegisterPage> t;
+@inject ApplicationDbContext _context;
+@inject UserManager<UserModel> _userManager;
+@inject IUserStore<UserModel> _userStore;
+@inject IEmailService _emailService;
+@inject SignInManager<UserModel> _signInManager;
+@inject IWebHostEnvironment _appEnvironment;
+@inject NavigationManager _navigator;
+
+
+@page "/Register";
+@using Microsoft.AspNetCore.Authentication;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.Identity.UI.Services;
+@using System.Text.Encodings.Web;
+@using Microsoft.AspNetCore.WebUtilities;
+@using StoriesWeb.Models.Dto;
+@using System.Text.RegularExpressions;
+@using StoriesWeb.Services;
+@using System.Text;
+@using System.Security.Policy;
+
+@using static StoriesWeb.Tools.Settings;
+
+<MudText Typo="Typo.h5" Class="text-center m-3">@t["Register"]</MudText>
+<MudGrid>
+    <MudItem sm="7" xs="12">
+      <MudForm @ref="registerForm" @bind-IsValid="@success" @bind-Errors="@errors">
+          <MudPaper Elevation="1" Class="p-3 m-3">
+
+        <MudTextField T="string" @bind-Value="@model.Email" @onfocus="@(()=>SetHelp("RegistrationEmail"))" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] InputType="InputType.Email" />
+
+        <MudTextField T="string" @bind-value="@model.Password" @onfocus="@(()=>SetHelp("RegistrationPassword"))" Label=@t["Password"] @ref="pwd" Required="true" RequiredError=@t["Password is required"] Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" InputType="InputType.Password" />
+        <MudTextField T="string" @bind-value="@passwordCheck" @onfocus="@(()=>SetHelp("RegistrationPasswordCheck"))" Label=@t["Password again"] Required="true" RequiredError=@t["Password again is required"] InputType="InputType.Password" Validation="@(new Func<string, string>(PasswordMatch))" />
+        <MudDatePicker Label=@t["Birthdate"] @bind-Date="@model.BirthDate" />
+        <MudTextField T="string" @bind-value="@model.FirstName" @onfocus="@(()=>SetHelp("RegistrationFirstname"))" Label=@t["Firstname"] Required="true" RequiredError=@t["Firstname is required"] />
+        <MudTextField T="string" @bind-value="@model.LastName" @onfocus="@(()=>SetHelp("RegistrationLastname"))" Label=@t["Lastname"] Required="true" RequiredError=@t["Lastname is required"] />
+        <MudTextField T="string" @bind-value="@model.DisplayedName" @onfocus="@(()=>SetHelp("RegistrationDisplayedname"))" Label=@t["Displayedname"] Required="true" RequiredError=@t["Displayedname is required"] />
+        <MudSelect T="Gender" @bind-Value="@model.Gender" @onselectionchange="@(()=>SetHelp("RegistrationGender"))" Label=@t["Gender"] AnchorOrigin="Origin.BottomCenter">
+          <MudSelectItem Value="@Gender.Other" >@t["Other"]</MudSelectItem>
+          <MudSelectItem Value="@Gender.Female">@t["Female"]</MudSelectItem>
+          <MudSelectItem Value="@Gender.Male">@t["Male"]</MudSelectItem>
+        </MudSelect>
+        <MudSelect T="int" @bind-Value="@model.CountryId" @oninput="@(()=>SetHelp("RegistrationCountry"))" Label=@t["Country"] AnchorOrigin="Origin.BottomCenter" Required="true" RequiredError=@t["Country is required"] Validation="@(new Func<int, string>(CountryValue))">
+          <MudSelectItem Value="0">@t["Select country"]</MudSelectItem>
+            @foreach(var country in countries)
+          {
+            <MudSelectItem Value="@country.Id" @onactivate="@(()=>SetHelp("RegistrationCountry"))">@country.CountryName</MudSelectItem>
+          }
+        </MudSelect>
+        <MudFileUpload Class="m-3" @onclick="@(()=>SetHelp("RegistrationPicture"))" T="IBrowserFile" For="@(() => model.Picture)"
+        @bind-Files="@model.Picture"
+              Accept=".jpg,.jpeg,.png,.gif">
+            <ButtonTemplate>
+              <MudButton HtmlTag="label"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+            @onclick="@(()=>SetHelp("RegistrationPicture"))"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                         for="@context">
+                @t["Add profile picture"]
+                
+              </MudButton>
+              @if(model.Picture != null)
+              {
+                <MudList>
+                  <MudListItem Icon="@Icons.Material.Filled.AttachFile" @key="@model.Picture">
+                      @model.Picture.Name <code>@model.Picture.Size bytes</code>
+                    </MudListItem>
+                </MudList>
+              }
+            </ButtonTemplate>
+          </MudFileUpload>
+          <MudDivider Class="mt-3 mb-3"></MudDivider>
+        <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false" OnClick="@(async () => await RegisterUser())">@t["Save"]</MudButton>
+          </MudPaper>
+      </MudForm>
+        <!-- registration form -->
+    </MudItem>
+  <MudItem sm="5" xs="12">
+      <!-- help -->
+   
+      @if (help.Length > 0)
+    {
+      <MudPaper Elevation="1" Class="p-3 m-3">
+        <HelpComponent Help="@help" />
+      </MudPaper>
+    }
+
+   
+      <!-- info log-->
+    @if(displayLog)
+    {
+        <MudPaper Elevation="1" Class="p-3 m-3">
+        @foreach (var report in reports)
+        {
+          <ReportComponent Report="@report" />
+        }
+        </MudPaper>
+    }
+  </MudItem>
+</MudGrid>
+@code 
+{
+  MudForm registerForm = new MudForm();
+  List<Report> reports;
+  bool success;
+  bool displayLog = false;
+  string[] errors = { };
+  MudTextField<string>? pwd;
+  string passwordCheck = string.Empty;
+  List<Country> countries = new();
+  UserRegistrationDto model = new();
+  string help = string.Empty;
+  bool continueRegistration = true;
+  string returnUrl;
+
+
+  protected override async Task OnInitializedAsync()
+  {
+    await GetCountries();
+    await base.OnInitializedAsync();
+  }
+
+  private IEnumerable<string> PasswordStrength(string pw)
+  {
+    if (string.IsNullOrWhiteSpace(pw))
+    {
+      yield return t["Password is required"];
+      yield break;
+    }
+    if (pw.Length < 8)
+      yield return t["Password must be at least of length 8"];
+    if (!Regex.IsMatch(pw, @"[A-Z]"))
+      yield return t["Password must contain at least one capital letter"];
+    if (!Regex.IsMatch(pw, @"[a-z]"))
+      yield return t["Password must contain at least one lowercase letter"];
+    if (!Regex.IsMatch(pw, @"[0-9]"))
+      yield return t["Password must contain at least one digit"];
+  }
+
+  private async Task RegisterUser()
+  {
+    UserModel newUser = new();
+    await registerForm.Validate();
+    if (errors.Length == 0)
+    {
+      displayLog = true;
+      reports = new();
+      reports.Add(new Report() { Type = ReportTypes.info, Text = "Registration starts" });
+      newUser.Email = model.Email;
+      newUser.UserName = model.Email;
+      newUser.FirstName = model.FirstName;
+      newUser.LastName = model.LastName;
+      newUser.DisplayedName = model.DisplayedName;
+      newUser.BirthDate = (DateTime)model.BirthDate;
+      newUser.Gender = model.Gender;
+      newUser.CountryId = model.CountryId;
+      try
+      {
+        var result = await _userManager.CreateAsync(newUser, model.Password);
+        if (result.Errors is not null && result.Errors.Any())
+        {
+          foreach (var error in result.Errors)
+          {
+            reports.Add(new Report() { Type = ReportTypes.error, Text = error.Description });
+          }
+          StateHasChanged();
+          continueRegistration = false;
+        }
+      }
+      catch (Exception ex)
+      {
+        reports.Add(new Report() { Type = ReportTypes.error, Text = ex.Message });
+        StateHasChanged();
+        continueRegistration = false;
+      }
+      if (continueRegistration)
+      {
+        reports.Add(new Report() { Type = ReportTypes.success, Text = "User registered, adding roles" });
+        StateHasChanged();
+        try
+        {
+          await _userManager.AddToRoleAsync(newUser, "Subscriber");
+        }
+        catch (Exception ex)
+        {
+          reports.Add(new Report() { Type = ReportTypes.error, Text = ex.Message });
+          StateHasChanged();
+          continueRegistration = false;
+        }
+      }
+
+      if (continueRegistration)
+      {
+        reports.Add(new Report() { Type = ReportTypes.success, Text = "Roles set. Working with picture" });
+
+        if (model.Picture is not null && model.Picture.Size > 0)
+        {
+          string[] permittedExtensions = { ".jpeg", ".jpg", ".gif", ".png" };
+          var ext = Path.GetExtension(model.Picture.Name.ToLowerInvariant());
+          if (ext is null && !permittedExtensions.Contains(ext))
+          {
+            reports.Add(new Report() { Type = ReportTypes.error, Text = "Unsupported picture format" });
+          }
+          else
+          {
+            string wwwroot = _appEnvironment.WebRootPath;
+            string[] type = model.Picture.Name.Split('.');
+            string extension = type.Last();
+            string filename = newUser.Id+"."+extension;
+            string path = Path.Combine(wwwroot, "pics", "users", filename);
+
+            try
+            {
+              await using FileStream fs = new(path, FileMode.Create);
+              await model.Picture.OpenReadStream().CopyToAsync(fs);
+              var tmp = path.Split("wwwroot");
+              newUser.PictureUrl = tmp.Last();
+              await _context.SaveChangesAsync();
+              reports.Add(new Report() { Type = ReportTypes.success, Text = "Picture saved"});
+            }
+            catch (Exception ex)
+            {
+              reports.Add(new Report() { Type = ReportTypes.error, Text = ex.Message });
+            }
+          }
+        }
+        
+      }
+
+      if (continueRegistration)
+      {
+        reports.Add(new Report() { Type = ReportTypes.info, Text = "Sending activation email" });
+        StateHasChanged();
+        IList<AuthenticationScheme> ExternalLogins;
+        ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+        var userId = await _userManager.GetUserIdAsync(newUser);
+        var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        returnUrl = await _context.ApplicationSetups.Select(s => s.ApplicationUrl).FirstOrDefaultAsync();
+        var callbackUrl = returnUrl + "/ConfirmEmail?userId=" + userId + "&code=" + code + "&returnUrl=" + returnUrl;
+        string link = HtmlEncoder.Default.Encode(callbackUrl);
+        ApiResponse<string> emailResponse = await _emailService.SendCodeAsync(callbackUrl, newUser.Email);
+        if (!emailResponse.Successful)
+        {
+          reports.Add(new Report() { Type = ReportTypes.error, Text = emailResponse.ErrorMessage });
+          StateHasChanged();
+          continueRegistration = false;
+        }
+        else
+        {
+          reports.Add(new Report() { Type = ReportTypes.success, Text = "All done. Now check your mailbox, including the spam folder" });
+          Thread.Sleep(2000);
+          _navigator.NavigateTo("/");
+        }
+        // send email
+      }
+    }
+  }
+
+  private string PasswordMatch(string arg)
+  {
+    if (pwd.Value != arg)
+      return t["Passwords don't match"];
+    return null;
+  }
+
+  private void SetHelp(string topic)
+  {
+    help = topic;
+    StateHasChanged();
+  }
+
+  private string CountryValue(int arg)
+  {
+    if (model.CountryId == 0)
+      return t["Country is required"];
+    return null;
+  }
+
+  public async Task GetCountries()
+  {
+    countries = await _context.Countries.ToListAsync();
+    List<Country> translatedCountries = new();
+    foreach (var country in countries)
+    {
+      country.CountryName = t[country.CountryName];
+      translatedCountries.Add(country);
+    }
+    countries = countries.OrderBy(s => s.CountryName).ToList();
+  }
+
+}

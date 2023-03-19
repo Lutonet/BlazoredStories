@@ -1,0 +1,113 @@
+﻿@page "/Login";
+@using Microsoft.AspNetCore.Identity;
+@using StoriesWeb.Models.Dto;
+@inject IStringLocalizer<LoginPage> t;
+@inject SignInManager<UserModel> _signInManager;
+@inject NavigationManager _navigator;
+
+
+<MudText Typo="Typo.h5" Class="text-center m-3">@t["Login"]</MudText>
+<MudGrid>
+    <MudItem sm="12" lg="5" Class="mt-3">
+        <MudPaper Elevation="2" Class="p-3 m-5">
+            <MudForm @ref="loginForm" @bind-IsValid="@success" @bind-Errors="@errors">
+                <MudTextField T="string" @bind-Value="@model.Email" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] InputType="InputType.Email" />
+                <MudTextField T="string" @bind-value="@model.Password" Label=@t["Password"] Required="true" RequiredError=@t["Password is required"] InputType="InputType.Password" />
+                <MudCheckBox @bind-Checked="@model.RememberMe" Size="Size.Medium" Color="Color.Primary">@t["Remember me"]</MudCheckBox>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="@(async() => await Login())">@t["Login"]</MudButton>
+                <MudDivider Class="mt-3 mb-3" />
+                <MudLink Class="mt-3" OnClick="ForgottenPassword">@t["I forgot the password"]</MudLink><br />
+                <MudLink Class="mt-3" OnClick="ResentActivation">@t["Resend Activation Email"]</MudLink><br />
+                <MudLink Class="mt-3" Href="/Register">@t["Register"]</MudLink>
+            </MudForm>
+            @if (showError)
+            {
+            <div style="margin: 10px;">
+                <MudAlert Severity="Severity.Error">
+                @errorMessage
+                </MudAlert>
+            </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+  @if (showResentActivationEmail)
+  {
+    <MudItem sm="12" lg="5" Class="mt-3">
+         <MudPaper Elevation="2" Class="p-3 m-5">
+            <MudForm @ref="resentEmail" @bind-IsValid="@success" @bind-Errors="@resentErrors">
+                <MudTextField T="string" @bind-Value="@ResentActivationEmail" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] InputType="InputType.Email" />
+                <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary">@t["Resend Activation Email"]</MudButton>
+             </MudForm>
+         </MudPaper>
+    </MudItem>
+  }
+
+@if (showForgottenPassword)
+{
+    <MudItem sm="12" lg="5" Class="mt-3">
+      <MudPaper Elevation="2" Class="p-3 m-5">
+        <MudForm @ref="forgottenPassword" @bind-IsValid="@success" @bind-Errors="@recoverErrors">
+          <MudTextField T="string" @bind-Value="@ForgottenPasswordEmail" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] InputType="InputType.Email" />
+          <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary">@t["Reset Password"]</MudButton>
+        </MudForm>
+      </MudPaper>
+    </MudItem>
+}
+
+</MudGrid>
+
+@code 
+{
+  bool showResentActivationEmail = false;
+  bool showForgottenPassword = false;
+  bool success;
+  string errorMessage = string.Empty;
+  bool showError = false;
+  string[] errors = { };
+  string[] recoverErrors = { };
+  string[] resentErrors = { };
+  LoginDto model = new();
+  MudForm loginForm = new();
+  MudForm resentEmail = new();
+  MudForm forgottenPassword = new();
+  string ForgottenPasswordEmail = string.Empty;
+  string ResentActivationEmail = string.Empty;
+
+  public void ForgottenPassword()
+  {
+    showResentActivationEmail = false;
+    showForgottenPassword = true;
+  }
+  public void ResentActivation()
+  {
+    showForgottenPassword = false;
+    showResentActivationEmail = true;
+  }
+
+  public async Task Login()
+  {
+    await loginForm.Validate();
+    if(errors.Length == 0)
+    {
+      var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+      if (result.Succeeded)
+      {
+        _navigator.NavigateTo("/");
+      }
+      if (result.IsLockedOut)
+      {
+        showError = true;
+        errorMessage = t["Account is locked out"];
+      }
+      
+      else
+      {
+        showError = true;
+        errorMessage = t["Invalid login attempt"];
+      }
+    }
+    
+  }
+
+}

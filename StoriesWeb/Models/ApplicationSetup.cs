@@ -9,9 +9,10 @@ namespace StoriesWeb.Models
     public int Id { get; set; }
 
     public string Name { get; set; } = "Stories";
+        public string ApplicationUrl { get; set; } = "https://localhost:7066";
     public bool TranslateName { get; set; } = true;
 
-    public string OwnerId { get; set; }
+    public string? OwnerId { get; set; }
 
     // email settings
     [Required]
@@ -25,6 +26,6 @@ namespace StoriesWeb.Models
     public bool UseAuthentication { get; set; } = true;
     public string? SmtpUser { get; set; }
     public string? SmtpPassword { get; set; }
-    public UserModel Owner { get; set; }
+    public UserModel? Owner { get; set; }
   }
 }

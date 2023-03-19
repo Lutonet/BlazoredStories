@@ -1,4 +1,6 @@
-﻿namespace StoriesWeb.Models.Dto
+﻿using Microsoft.AspNetCore.Components.Forms;
+
+namespace StoriesWeb.Models.Dto
 {
   public class AdministratorDto
   {
@@ -9,7 +11,7 @@
     public string Password { get; set; }
     public DateTime BirthDate { get; set; }
     public int CountryId { get; set; }
-    public IFormFile? Picture { get; set; }
+    public IBrowserFile? Picture { get; set; }
     public string? PictureUrl { get; set; }
   }
 }

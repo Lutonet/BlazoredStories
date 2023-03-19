@@ -1,0 +1,35 @@
+﻿@using StoriesWeb.Models.Dto;
+@using StoriesWeb.Services;
+@inject IHelperService helper
+@inject IStringLocalizer<HelpComponent> t;
+@if (help.Title != null)
+{
+  
+    <MudText Typo="Typo.h5" Class="text-center mb-3">@t[help.Title]</MudText>
+    @foreach(var line in txt)
+    {
+        <MudText Typo="Typo.body2">@line</MudText>
+    }
+}
+
+@code 
+{
+  string[] txt;
+  private HelpDto help = new();
+  protected override Task OnParametersSetAsync()
+  {
+    help = helper.GetHelp(Help);
+    if (help.Body is not null && help.Body.Length > 0)
+    {
+    var text = (string)t[helper.GetHelp(Help).Body];
+    txt = text.Split("\n");
+      
+    }
+    return base.OnParametersSetAsync();
+  }
+
+  [Parameter]
+  public string Help { get; set; }
+  
+  
+}

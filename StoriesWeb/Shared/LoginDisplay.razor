@@ -1,12 +1,46 @@
-﻿<AuthorizeView>
+﻿@using Microsoft.AspNetCore.Identity;
+@inject ApplicationDbContext _context;
+@inject UserManager<UserModel> UserManager;
+@inject SignInManager<UserModel> SignInManager
+@inject AuthenticationStateProvider _authenticationStateProvider
+
+@code {
+  async Task<string> getUserId()
+  {
+    var user = (await _authenticationStateProvider.GetAuthenticationStateAsync()).User;
+    var UserId = user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value;
+    return UserId;
+  }
+}
+
+<AuthorizeView>
     <Authorized>
-        <a href="Identity/Account/Manage">Hello, @context.User.Identity?.Name!</a>
+        <a href="/Account"><img src="@ActualUser.PictureUrl" style="height: 32px;" /></a>
         <form method="post" action="Identity/Account/Logout">
-            <button type="submit" class="nav-link btn btn-link">Log out</button>
+            <button type="submit" class="nav-link btn" style="color: springgreen"><MudIcon Icon="@Icons.Material.Filled.Logout"></MudIcon></button>
         </form>
     </Authorized>
     <NotAuthorized>
-        <a href="Identity/Account/Register">Register</a>
-        <a href="Identity/Account/Login">Log in</a>
+        <a href="/Register" class="mr-3 btn" style="color: springgreen">
+            <MudIcon Icon="@Icons.Material.Filled.PersonAdd" />
+        </a>
+        <a href="/Identity/Account/Login?darktheme=@_isDarkMode" class="btn" style="color: springgreen">
+            <MudIcon Icon="@Icons.Material.Filled.Login" />
+        </a>
     </NotAuthorized>
 </AuthorizeView>
+@code
+{
+  [Parameter]
+  public bool _isDarkMode { get; set; }
+
+  public UserModel ActualUser { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    string userId = await getUserId();
+    ActualUser = await _context.Users.Where(s => s.Id == userId).FirstOrDefaultAsync();
+
+    await base.OnInitializedAsync();
+  }
+}

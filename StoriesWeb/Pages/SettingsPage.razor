@@ -1,0 +1,51 @@
+﻿@page "/Settings"
+@using System.Security.Claims;
+@inject NavigationManager navigation;
+@inject IStringLocalizer<SettingsPage> t;
+
+
+<MudGrid Class="m-3 p-3">
+    <MudItem sm="1">
+
+    </MudItem>
+    <MudItem sm="10">
+
+<MudText Typo="Typo.h5" Class="text-center m-3">@t["Settings"]</MudText>
+<MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+  <MudTabPanel Text=@t["Application Settings"] >
+      <MudPaper Elevation="2" Class="p-3 m-5">
+          <SettingsComponent />
+      </MudPaper>
+  </MudTabPanel>
+  <MudTabPanel Text=@t["Translator Settings"]>
+        <MudPaper Elevation="2" Class="p-3 m-5">
+          <TranslatorSettingsComponent />
+        </MudPaper>
+  </MudTabPanel>
+  <MudTabPanel Text=@t["Statistics"]>
+        <MudPaper Elevation="2" Class="p-3 m-5">
+          <StatisticsComponent />
+        </MudPaper>
+  </MudTabPanel>
+</MudTabs>
+    </MudItem>
+  <MudItem sm="1">
+
+  </MudItem>
+</MudGrid>
+
+@code {
+  [CascadingParameter(Name ="User")]
+  ClaimsPrincipal User { get; set; } 
+  [CascadingParameter(Name = "Roles")]
+  List<string> Roles { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    if (!Roles.Contains("Administrator"))
+      navigation.NavigateTo("/");
+
+
+  }
+ 
+}

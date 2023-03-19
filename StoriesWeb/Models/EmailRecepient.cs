@@ -10,7 +10,7 @@ namespace StoriesWeb.Models
 
     public int EmailLogId { get; set; }
     public bool Sent { get; set; } = false;
-    public DateTime? SentAt { get; set; }
+    public DateTime? SentAt { get; set; } = DateTime.UtcNow;
 
     public string? Error { get; set; } = "";
 

@@ -1,0 +1,43 @@
+﻿@using StoriesTranslationServices.Models;
+@using StoriesTranslationServices.Services;
+@inject IStringLocalizer<TranslatorSettingsComponent> t;
+@inject ITranslationsSettingsService _settingsService;
+
+<MudText Typo="Typo.h5" Class="text-center p-2">@t["Translator Settings"]</MudText>
+<MudDivider Class="m-2"/>
+  <MudGrid>
+      <MudItem sm="7">
+        <MudText Typo="Typo.h6" Class="text-center p-2">@t["Libre Translate servers"]</MudText>
+    <MudDivider Class="m-2" />
+    @if(settings.Servers is not null && settings.Servers.Count > 0)
+    {
+      int i = 0;
+      foreach (var server in settings.Servers)
+      {
+        servers.Add(server);
+        // add inputs for server
+        <MudTextField T="string" @bind-value="@servers[i].ServerAddress"></MudTextField>
+        i++;
+      }
+    }
+  </MudItem>
+      <MudItem sm="5">
+
+      </MudItem>
+  </MudGrid>
+
+
+
+@code {
+
+  private Settings settings = new();
+  private List<LibreTranslateServer> servers = new();
+  protected override async Task OnInitializedAsync()
+  {
+    StoriesTranslationServices.Models.Helpers.ApiResponse<Settings> apiResponse = await _settingsService.GetSettingsAsync();
+    if (apiResponse.Success)
+      settings = apiResponse.Data;
+    await base.OnInitializedAsync();
+  }
+
+}

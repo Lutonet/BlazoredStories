@@ -6,7 +6,7 @@ namespace StoriesWeb.Models.Dto
   public class InstallationDto
   {
     public string ApplicationName { get; set; } = "Stories";
-
+    public string ApplicationUrl { get; set; } = "https://localhost:7066";
     public bool TranslateName { get; set; } = true;
     public string Email { get; set; }
     public string Password { get; set; }

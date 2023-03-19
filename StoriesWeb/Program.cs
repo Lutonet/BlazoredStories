@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.OpenApi.Models;
 using MudBlazor.Services;
 using Serilog;
 using StoriesI18n.Middlewares;
 using StoriesI18n.Models;
 using StoriesI18n.Services;
+using StoriesTranslationServices.Services;
 using StoriesWeb.Areas.Identity;
 using StoriesWeb.Data;
 using StoriesWeb.Hubs;
@@ -46,16 +48,21 @@ namespace StoriesWeb
         options.Password.RequiredLength = 6;
         options.Password.RequiredUniqueChars = 1;
 
-        options.SignIn.RequireConfirmedAccount = false;
+        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedEmail = true;
 
         options.User.RequireUniqueEmail = true;
-      }).AddEntityFrameworkStores<ApplicationDbContext>();
+      })
+        .AddDefaultTokenProviders()
+        .AddEntityFrameworkStores<ApplicationDbContext>();
       builder.Services.AddLocalization();
       builder.Services.AddMudServices();
       builder.Services.AddAuthentication();
       builder.Services.AddSingleton(I18nSettings);
+      builder.Services.AddTransient<ITranslationsSettingsService, TranslationsSettingsService>();
       builder.Services.AddTransient<IFirstRunService, FirstRunService>();
       builder.Services.AddTransient<IEmailService, EmailService>();
+      builder.Services.AddTransient<IHelperService, HelperService>();
       builder.Services.AddTransient<I18nMiddleware>();
       builder.Services.AddTransient<IStringLocalizerFactory, JsonStringLocalizerFactory>();
       builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<UserModel>>();
@@ -83,16 +90,15 @@ namespace StoriesWeb
       }
 
       app.UseMiddleware<I18nMiddleware>();
+      app.UseRequestLocalization();
+      app.UseStaticFiles();
       app.MapControllers();
       app.MapRazorPages();
       app.UseHttpsRedirection();
-      app.UseRequestLocalization();
-      app.UseStaticFiles();
       app.UseRouting();
       app.UseAuthorization();
-
       app.MapBlazorHub();
-      app.MapHub<IndexHub>("/indexhub");
+      app.MapHub<IndexHub>("/IndexHub");
 
       app.MapFallbackToPage("/_Host");
 

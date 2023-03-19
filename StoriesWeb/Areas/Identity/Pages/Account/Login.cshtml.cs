@@ -15,6 +15,7 @@ namespace StoriesWeb.Areas.Identity.Pages.Account
   {
     private readonly SignInManager<UserModel> _signInManager;
     private readonly ILogger<LoginModel> _logger;
+    public bool DarkTheme { get; set; }
 
     public LoginModel(SignInManager<UserModel> signInManager, ILogger<LoginModel> logger)
     {
@@ -78,13 +79,17 @@ namespace StoriesWeb.Areas.Identity.Pages.Account
       public bool RememberMe { get; set; }
     }
 
-    public async Task OnGetAsync(string returnUrl = null)
+    public async Task OnGetAsync(string returnUrl = null, bool darktheme = false)
     {
+
       if (!string.IsNullOrEmpty(ErrorMessage))
       {
         ModelState.AddModelError(string.Empty, ErrorMessage);
       }
-
+      if(darktheme)
+      {
+        DarkTheme = true;
+      }
       returnUrl ??= Url.Content("~/");
 
       // Clear the existing external cookie to ensure a clean login process

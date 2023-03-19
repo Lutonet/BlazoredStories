@@ -7,6 +7,8 @@
 @inject IStringLocalizer<ApplicationSetup> t;
 @inject IEmailService email;
 @inject ApplicationDbContext _context;
+@inject IFirstRunService _service;
+@inject NavigationManager _navigator;
 
 <MudPaper Class="pa-4 ma-3">
     <MudForm @ref="settingsForm" @bind-IsValid="@success" @bind-Errors="@errors">
@@ -16,6 +18,7 @@
             <MudItem xs="12" sm="6" Class="pa-3 mt-3">
                 <MudTextField T="string" @bind-value="@model.ApplicationName" Label=@t["Application Name"] Required="true" RequiredError=@t["Application name is required"] />
                 <MudCheckBox @bind-Checked="@model.TranslateName" Size="Size.Medium" Color="Color.Primary">@t["Translate application name"]</MudCheckBox>
+        <MudTextField T="string" @bind-value="@model.ApplicationUrl" Label=@t["Application URL"] Required="true" RequiredError=@t["Application URL is required"] />
                 <MudDivider Class="mt-2" />
                 <MudText Typo="Typo.h5" Class="text-center m-2">@t["SMTP Settings"]</MudText>
                 <MudDivider Class="mt-2" />
@@ -107,12 +110,22 @@
           <MudDivider Class="mt-3 mb-3"></MudDivider>
           <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false" OnClick="@(async () => await RegisterAdmin())">@t["Save"]</MudButton>
         }
-            </MudItem>
+          </MudItem>
+          <MudItem sm="12">
+              <MudPaper>
+                  @foreach(var report in reports)
+          {
+            <ReportComponent Report="@report" />
+          }
+
+              </MudPaper>
+          </MudItem>
         </MudGrid>
     </MudForm>
 </MudPaper>
 
 @code {
+  List<Report> reports = new();
   bool success;
   string[] errors = { };
   MudTextField<string> pwd;
@@ -152,11 +165,62 @@
 
   public async Task RegisterAdmin()
   {
-    errors.Append("test");
     await settingsForm.Validate();
     if (errors.Length == 0)
     {
+      // first create ApplicationSettings
+      ApplicationSettingsDto newSettings = new()
+        {
+          Name = model.ApplicationName,
+          ApplicationUrl = model.ApplicationUrl,
+      TranslateName = model.TranslateName,
+        SmtpServer = model.SmtpServer,
+        EmailFrom = model.EmailFrom,
+        SmtpPort = model.SmtpPort,
+        SecureSocketOptions = model.SecureSocketOptions,
+        UseAuthentication = model.UseAuthentication,
+        SmtpUser = model.SmtpUser,
+        SmtpPassword = model.SmtpPassword
+      };
+      reports.Add(new Report { Type = ReportTypes.info, Text = t["Creating application settings"] });
+      StateHasChanged();
+      ApiResponse<string> appResult = await _service.CreateApplicationSettings(newSettings);
+      if (appResult.Successful)
+      {
+        reports.Add(new Report { Type = ReportTypes.success, Text = t["Application settings created"] });
+        reports.Add(new Report { Type = ReportTypes.info, Text = t["Creating administrator"] });
+
+        AdministratorDto newUser = new()
+          {
+            DisplayedName = model.DisplayedName,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            Email = model.Email,
+            Password = model.Password,
+            BirthDate = (DateTime)model.BirthDate,
+            CountryId = model.CountryId,
+            Picture = model.Picture
+          };
+        ApiResponse<string> userResult = await _service.CreateAdministrator(newUser);
+        if (userResult.Successful)
+        {
+          reports.Add(new Report { Type = ReportTypes.success, Text = t["All done"] });
+          StateHasChanged();
+          Thread.Sleep(2000);
+          _navigator.NavigateTo("/");
+        }
+        else
+        {
+          reports.Add(new Report { Type = ReportTypes.error, Text = userResult.ErrorMessage });
+        }
+        StateHasChanged();
+      }
+      else
+      {
+        reports.Add(new Report { Type = ReportTypes.error, Text = appResult.ErrorMessage });
+      }
       //try to register user
+      StateHasChanged();
     }
   }
 

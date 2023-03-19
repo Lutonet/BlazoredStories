@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Routing.Constraints;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using StoriesWeb.Data;
@@ -17,6 +19,7 @@ namespace StoriesWeb.Services
     private readonly SignInManager<UserModel> _signInManager;
     private readonly UserManager<UserModel> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IWebHostEnvironment _appEnvironment;
 
     public FirstRunService(ApplicationDbContext context,
                            IStringLocalizer<FirstRunService> _t,
@@ -24,7 +27,8 @@ namespace StoriesWeb.Services
                            IEmailService email,
                            SignInManager<UserModel> signInManager,
                            UserManager<UserModel> userManager,
-                           RoleManager<IdentityRole> roleManager)
+                           RoleManager<IdentityRole> roleManager,
+                           IWebHostEnvironment appEnvironment)
     {
       t = _t;
       _context = context;
@@ -33,6 +37,7 @@ namespace StoriesWeb.Services
       _userManager = userManager;
       _roleManager = roleManager;
       _email = email;
+      _appEnvironment = appEnvironment;
     }
 
     // step 1 create countries
@@ -623,6 +628,7 @@ namespace StoriesWeb.Services
 
         set.Name = settings.Name;
         set.TranslateName = settings.TranslateName;
+        set.ApplicationUrl = settings.ApplicationUrl;
         set.EmailFrom = settings.EmailFrom;
         set.SmtpServer = settings.SmtpServer;
         set.UseAuthentication = settings.UseAuthentication;
@@ -660,7 +666,7 @@ namespace StoriesWeb.Services
         newAdmin.Email = administrator.Email;
         newAdmin.BirthDate = administrator.BirthDate;
         newAdmin.CountryId = administrator.CountryId;
-        newAdmin.PictureUrl = administrator.PictureUrl;
+
         var result = await _userManager.CreateAsync(newAdmin, administrator.Password);
 
         await _userManager.AddToRoleAsync(newAdmin, "Subscriber");
@@ -702,8 +708,34 @@ namespace StoriesWeb.Services
       };
       try
       {
+        string path;
+
         await _context.Administrators.AddAsync(newAdministrator);
         await _context.SaveChangesAsync();
+        //todo deal with picture
+        if (administrator.Picture  != null && administrator.Picture.Size > 0)
+        {
+          string wwwroot = _appEnvironment.WebRootPath;
+          string[] type = administrator.Picture.Name.Split('.');
+          string extension = type.Last();
+          string filename = newAdmin.Id+"."+extension;
+          path = Path.Combine(wwwroot, "pics", "users", filename);
+
+          try
+          {
+            await using FileStream fs = new(path, FileMode.Create);
+            await administrator.Picture.OpenReadStream().CopyToAsync(fs);
+            var tmp = path.Split("wwwroot");
+            newAdmin.PictureUrl = tmp.Last();
+            await _context.SaveChangesAsync();
+          }
+          catch (Exception ex)
+          {
+            response.ErrorMessage = ex.Message;
+            response.Successful = true;
+          }
+        }
+
         response.Data = "Administrator created successfuly";
         return response;
       }

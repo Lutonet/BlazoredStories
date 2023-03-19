@@ -1,10 +1,17 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.SignalR.Client;
 @using Microsoft.Extensions.Localization;
+@using System.Security.Claims;
 @inject IStringLocalizer<Index> t;
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
 
 <MudThemeProvider @ref="@_mudThemeProvider" @bind-IsDarkMode="@_isDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<CascadingValue Value="@user" Name="User" >
+    <CascadingValue Value="@roles" Name="Roles">
 
 
 
@@ -13,6 +20,19 @@
     <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
     <MudText Typo="Typo.h5" Class="ml-3">@t["Application"]</MudText>
     <MudSpacer />
+      <LoginDisplay _isDarkMode="@_isDarkMode" />
+    @if (IsConnected)
+    {
+      <MudIcon Icon="@Icons.Material.Filled.Podcasts" Class="mr-3 ml-3" Color="Color.Success"></MudIcon>
+    }
+    @if (!IsConnected)
+    {
+      <MudIcon Icon="@Icons.Material.Filled.PortableWifiOff" Class="mr-3 ml-3" Color="Color.Error"></MudIcon>
+    }
+      @if (roles.Contains("Administrator"))
+    {
+      <MudLink Href="/Settings"><MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-3 ml-3" Color="Color.Error"></MudIcon></MudLink>
+    }
     <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
     <MudSwitch @bind-Checked="@_isDarkMode" Color="Color.Primary" Class="ma-4" T="bool" Label=@t["TogleMode"] />
 
@@ -24,15 +44,52 @@
     @Body
   </MudMainContent>
 </MudLayout>
+    </CascadingValue>
+</CascadingValue>
 @code {
   bool _drawerOpen = false;
-   
+  public bool _isDarkMode { get; set; }
+  private MudThemeProvider _mudThemeProvider;
+  private HubConnection? hubConnection;
+  public List<string> roles = new();
+  public ClaimsPrincipal user = new();
+
   void DrawerToggle()
   {
     _drawerOpen = !_drawerOpen;
   }
-  private bool _isDarkMode;
-  private MudThemeProvider _mudThemeProvider;
+
+  protected override async Task OnInitializedAsync()
+  {
+    var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+    user = authstate.User;
+    roles = GetRoles(user);
+    List<string> GetRoles(ClaimsPrincipal user)
+    {
+      var userIdentity = (ClaimsIdentity)user.Identity;
+      var claims = userIdentity.Claims;
+      return claims.Where(c => c.Type == ClaimTypes.Role).Select(_ => _.Value).ToList();
+    }
+    var name = user.Identity.Name;
+
+    hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/IndexHub"))
+            .Build();
+    await hubConnection.StartAsync();
+    StateHasChanged();
+    await base.OnInitializedAsync();
+  }
+  public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+  public async ValueTask DisposeAsync()
+  {
+    if (hubConnection is not null)
+    {
+      await hubConnection.DisposeAsync();
+      StateHasChanged();
+    }
+  }
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {

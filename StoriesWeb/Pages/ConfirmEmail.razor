@@ -1,0 +1,53 @@
+﻿@page "/ConfirmEmail"
+@using System.Text;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.WebUtilities;
+@inject UserManager<UserModel> _userManager;
+@inject IStringLocalizer<ConfirmEmail> t;
+@inject NavigationManager _navigation
+
+
+<MudText Typo="Typo.h5" Class="m-3">@t["Confirm Email"]</MudText>
+<MudText Typo="Typo.body1">@StatusMessage</MudText>
+
+
+
+@code {
+  ActivationEmailParameters parameters = new();
+
+  string StatusMessage { get; set; } = string.Empty;
+
+  public class ActivationEmailParameters
+  {
+    public string userid { get; set; }
+    public string code { get; set; }
+    public string returnurl { get; set; }
+  }
+
+  ActivationEmailParameters GetQueryParm()
+  {
+    ActivationEmailParameters response = new();
+    var uriBuilder = new UriBuilder(_navigation.Uri);
+    var q = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+    response.userid = q["userid"];
+    response.code = q["code"];
+    response.returnurl = q["returnurl"];
+    return response;
+  }
+  protected override async Task OnInitializedAsync()
+  {
+    parameters = GetQueryParm();
+
+    var user = await _userManager.FindByIdAsync(parameters.userid);
+    if (user == null)
+    {
+      StatusMessage = t["Not Found"];
+    }
+    else
+    {
+      var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(parameters.code));
+      var result = await _userManager.ConfirmEmailAsync(user, code);
+      StatusMessage = result.Succeeded ? t["Thank you for confirming your email."] : t["Error confirming your email."];
+    }
+  }
+}

@@ -1,0 +1,72 @@
+﻿@page "/Account"
+@using Microsoft.AspNetCore.Identity;
+@using StoriesWeb.Models.Dto;
+@inject SignInManager<UserModel> SignInManager
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject IStringLocalizer<AccountPage> t;
+@inject ApplicationDbContext _context;
+
+@code {
+  UserProfileDto actualUser = new();
+  bool fatalError = false;
+  string fatalErrorText = string.Empty;
+
+  async Task<string> getUserId()
+  {
+    var user = (await _authenticationStateProvider.GetAuthenticationStateAsync()).User;
+    var UserId = user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value;
+    return UserId;
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    string actualUserId = await getUserId();
+    if (actualUserId == null)
+    {
+      fatalError = true;
+      fatalErrorText = t["User not found"];
+    }
+    else
+    {
+      UserModel actualUserModel = await _context.Users.FirstOrDefaultAsync(s => s.Id == actualUserId);
+      if (actualUserModel == null)
+      {
+        fatalError = true;
+        fatalErrorText = t["User not found"];
+      }
+      else
+      {
+        actualUser.Email = actualUserModel.Email;
+        actualUser.DisplayedName = actualUserModel.DisplayedName;
+        actualUser.FirstName = actualUserModel.FirstName;
+        actualUser.LastName = actualUserModel.LastName;
+        actualUser.CountryId = actualUserModel.CountryId;
+        actualUser.PictureUrl = actualUserModel.PictureUrl;
+        actualUser.Gender = actualUserModel.Gender;
+
+        actualUser.Info = actualUserModel.Info;
+
+        actualUser.Facebook = actualUserModel.Facebook;
+        actualUser.Twitter = actualUserModel.Twitter;
+        actualUser.Microsoft = actualUserModel.Microsoft;
+        actualUser.Google = actualUserModel.Google;
+
+        actualUser.MessageNotification = actualUserModel.MessageNotification;
+        actualUser.PrivateMessageNotification = actualUserModel.PrivateMessageNotification;
+        actualUser.SystemMessageNotification = actualUserModel.SystemMessageNotification;
+
+        actualUser.EmailPrivacy = actualUserModel.EmailPrivacy;
+        actualUser.NamePrivacy = actualUserModel.NamePrivacy;
+        actualUser.FriendsPrivacy = actualUserModel.FrindsPrivacy;
+        actualUser.SocialMediaLinksPrivacy = actualUserModel.SocialMediaLinksPrivacy;
+        actualUser.CountryPrivacy = actualUserModel.CountryPrivacy;
+        actualUser.BirthDatePrivacy = actualUserModel.BirthDatePrivacy;
+        actualUser.PictureFilePrivacy = actualUserModel.PictureFilePrivacy;
+        actualUser.LastSeenPrivacy = actualUserModel.LastSeenPrivacy;
+
+      }
+    }
+    await base.OnInitializedAsync();
+  }
+
+}

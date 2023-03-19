@@ -11,8 +11,8 @@ using StoriesWeb.Data;
 namespace StoriesWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230311215432_ChangedNullableForDateTimeInEmailRecepientTable")]
-    partial class ChangedNullableForDateTimeInEmailRecepientTable
+    [Migration("20230315205456_ApplicationURL")]
+    partial class ApplicationURL
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -232,6 +232,10 @@ namespace StoriesWeb.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ApplicationUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("EmailFrom")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -241,7 +245,6 @@ namespace StoriesWeb.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OwnerId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SecureSocketOptions")
@@ -1123,11 +1126,9 @@ namespace StoriesWeb.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("ChatBackgroundColor")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ChatFontColor")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConcurrencyStamp")
@@ -1198,14 +1199,13 @@ namespace StoriesWeb.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("MessageNotification")
+                    b.Property<bool?>("MessageNotification")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Microsoft")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NameFontColor")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("NamePrivacy")
@@ -1237,11 +1237,10 @@ namespace StoriesWeb.Migrations
                     b.Property<string>("PictureUrl")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("PrivateMessageNotification")
+                    b.Property<bool?>("PrivateMessageNotification")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Reason")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("RegistrationTime")
@@ -1253,10 +1252,10 @@ namespace StoriesWeb.Migrations
                     b.Property<int>("SocialMediaLinksPrivacy")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("SystemMessageNotification")
+                    b.Property<bool?>("SystemMessageNotification")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ThemeId")
+                    b.Property<int?>("ThemeId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Twitter")
@@ -1426,9 +1425,7 @@ namespace StoriesWeb.Migrations
                 {
                     b.HasOne("StoriesWeb.Models.UserModel", "Owner")
                         .WithOne("ApplicationSetup")
-                        .HasForeignKey("StoriesWeb.Models.ApplicationSetup", "OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("StoriesWeb.Models.ApplicationSetup", "OwnerId");
 
                     b.Navigation("Owner");
                 });

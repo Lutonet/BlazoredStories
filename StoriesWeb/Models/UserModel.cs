@@ -45,7 +45,7 @@ namespace StoriesWeb.Models
     [DisplayFormat(DataFormatString = "{0: dd-MM-yyyy}")]
     public DateTime DeactivatedUntil { get; set; }
 
-    public string Reason { get; set; } = "";
+    public string? Reason { get; set; } = "";
     public string? PictureUrl { get; set; }
 
     public Gender Gender { get; set; } = Gender.Other;
@@ -60,16 +60,16 @@ namespace StoriesWeb.Models
 
     public string? Google { get; set; }
 
-    public int ThemeId { get; set; }
-    public string NameFontColor { get; set; }
+    public int? ThemeId { get; set; }
+    public string? NameFontColor { get; set; }
 
-    public string ChatFontColor { get; set; }
+    public string? ChatFontColor { get; set; }
 
-    public string ChatBackgroundColor { get; set; }
+    public string? ChatBackgroundColor { get; set; }
 
-    public bool MessageNotification { get; set; }
-    public bool PrivateMessageNotification { get; set; }
-    public bool SystemMessageNotification { get; set; }
+    public bool? MessageNotification { get; set; }
+    public bool? PrivateMessageNotification { get; set; }
+    public bool? SystemMessageNotification { get; set; }
 
     [DisplayName("Who can see your email")]
     public AccessRights EmailPrivacy { get; set; } = AccessRights.Private;

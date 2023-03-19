@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -27,7 +28,9 @@ namespace StoriesI18n.Middlewares
         Thread.CurrentThread.CurrentCulture = culture;
         Thread.CurrentThread.CurrentUICulture = culture;
       }
-
+      if (!string.IsNullOrEmpty(context.User.Identity.Name))
+      {
+      }
       await next(context);
     }
 

@@ -1,0 +1,65 @@
+﻿@page "/ResendEmailConfirmation"
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.AspNetCore.WebUtilities;
+@using StoriesWeb.Services;
+@using System.Text;
+@using System.Text.Encodings.Web;
+@inject IStringLocalizer<ResendEmailConfirmation> t;
+@inject NavigationManager _navigator;
+@inject UserManager<UserModel> _userManager;
+@inject IEmailService _emailSender;
+@inject ApplicationDbContext _context;
+
+<MudText Typo="Typo.h5" Class="text-center m-3">@t["Resend Activation Email"]</MudText>
+<MudGrid>
+  <MudItem sm="12" lg="5" Class="mt-3">
+    <MudPaper Elevation="2" Class="p-3 m-5">
+      <MudForm @ref="resentEmail" @bind-IsValid="@success" @bind-Errors="@resentErrors">
+        <MudTextField T="string" @bind-Value="@ResentActivationEmail" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] InputType="InputType.Email" />
+        <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" @onclick="@(async () => await Activate())">@t["Resend Activation Email"]</MudButton>
+      </MudForm>
+      @if(showSuccess)
+      {
+        <div style="margin: 10px;">
+          <MudAlert Severity="Severity.Success">
+            @message
+          </MudAlert>
+        </div>
+      }
+    </MudPaper>
+  </MudItem>
+</MudGrid>
+
+@code {
+  bool showSuccess = false;
+  bool success;
+  string[] resentErrors = { };
+  string message;
+  string ResentActivationEmail = string.Empty;
+  string returnUrl;
+  MudForm resentEmail = new();
+
+  public async Task Activate()
+  {
+    var user = await _userManager.FindByEmailAsync(ResentActivationEmail);
+    if (user == null)
+    {
+      showSuccess = true;
+      message = t["Verification email sent. Please check your email."];
+    }
+    else
+    {
+      var userId = await _userManager.GetUserIdAsync(user);
+      var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+      code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+      returnUrl = await _context.ApplicationSetups.Select(s => s.ApplicationUrl).FirstOrDefaultAsync();
+      var callbackUrl = returnUrl + "/ConfirmEmail?userId=" + userId + "&code=" + code + "&returnUrl=" + returnUrl;
+      string link = HtmlEncoder.Default.Encode(callbackUrl);
+      await _emailSender.SendCodeAsync(callbackUrl, user.Email);
+      showSuccess = true;
+      message = t["Verification email sent. Please check your email."];
+    }
+
+  }
+
+}
