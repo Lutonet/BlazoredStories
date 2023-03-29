@@ -423,5 +423,19 @@
   "Settings": "Settings",
   "Translator Settings": "Translator Settings",
   "Statistics": "Statistics",
-  "Libre Translate servers": "Libre Translate servers"
+  "Libre Translate servers": "Libre Translate servers",
+  "Server address": "Server address",
+  "Port": "Port",
+  "Use API key": "Use API key",
+  "API key": "API key",
+  "found": "found",
+  "languages": "languages",
+  "Translations directory": "Translations directory",
+  "Select source language for translations": "Select source language for translations",
+  "Select languages excluded from automatic UI translation": "Select languages excluded from automatic UI translation",
+  "Languages list from server": "Languages list from server ",
+  "received successfuly": " received successfuly",
+  "Libretranslate tools": "Libre tools",
+  "Select the server": "Select the server",
+  "Text to translate": "Text to translate"
 }

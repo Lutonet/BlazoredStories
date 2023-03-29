@@ -5,6 +5,7 @@ using MimeKit;
 using StoriesWeb.Data;
 using StoriesWeb.Models;
 using StoriesWeb.Models.Helpers;
+using ToolsLibrary.Models;
 
 namespace StoriesWeb.Services
 {

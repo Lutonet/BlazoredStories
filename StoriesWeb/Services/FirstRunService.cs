@@ -7,6 +7,7 @@ using StoriesWeb.Data;
 using StoriesWeb.Models;
 using StoriesWeb.Models.Dto;
 using StoriesWeb.Models.Helpers;
+using ToolsLibrary.Models;
 
 namespace StoriesWeb.Services
 {
@@ -319,12 +320,12 @@ namespace StoriesWeb.Services
       {
         await _context.Countries.AddRangeAsync(countries);
         await _context.SaveChangesAsync();
-        return new Models.Helpers.ApiResponse<string>() { Data =  countries.Count().ToString()+" "+t["Countries created"] };
+        return new ApiResponse<string>() { Data =  countries.Count().ToString()+" "+t["Countries created"] };
       }
       catch (Exception ex)
       {
         _logger.LogError("Error saving Countries table", ex);
-        return new Models.Helpers.ApiResponse<string>()
+        return new ApiResponse<string>()
         {
           ErrorMessage = ex.Message,
           Successful = false
@@ -365,7 +366,7 @@ namespace StoriesWeb.Services
       catch (Exception ex)
       {
         _logger.LogError("Error saving AgeRestriction table", ex);
-        return new Models.Helpers.ApiResponse<string>()
+        return new ApiResponse<string>()
         {
           ErrorMessage = ex.Message,
           Successful = false
@@ -407,7 +408,7 @@ namespace StoriesWeb.Services
       catch (Exception ex)
       {
         _logger.LogError($"{ex.Message}", ex);
-        return new Models.Helpers.ApiResponse<string>()
+        return new ApiResponse<string>()
         { ErrorMessage="Couldn't create GroupName data", Successful = false };
       }
     }

@@ -38,6 +38,7 @@
   <ItemGroup>
     <ProjectReference Include="..\StoriesI18n\StoriesI18n.csproj" />
     <ProjectReference Include="..\StoriesTranslationServices\StoriesTranslationServices.csproj" />
+    <ProjectReference Include="..\ToolsLibrary\ToolsLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

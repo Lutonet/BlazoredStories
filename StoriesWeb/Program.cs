@@ -66,6 +66,7 @@ namespace StoriesWeb
       builder.Services.AddTransient<I18nMiddleware>();
       builder.Services.AddTransient<IStringLocalizerFactory, JsonStringLocalizerFactory>();
       builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<UserModel>>();
+      builder.Services.AddTransient<ILibreApiService, LibreApiService>();
       builder.Services.AddRazorPages();
       builder.Services.AddServerSideBlazor();
       builder.Services.AddResponseCompression(opts =>
@@ -102,6 +103,22 @@ namespace StoriesWeb
 
       app.MapFallbackToPage("/_Host");
 
+      StoriesWeb.Services.BackgroundService _background = new();
+      CancellationTokenSource source = new CancellationTokenSource();
+      CancellationToken token = source.Token;
+      Task task = new Task(Worker);
+
+      void Worker()
+      {
+        int i = 0;
+        while (!token.IsCancellationRequested)
+        {
+          i++;
+          Console.WriteLine("Running "+ i);
+          Thread.Sleep(3000);
+        }
+      };
+      task.Start();
       app.Run();
     }
   }

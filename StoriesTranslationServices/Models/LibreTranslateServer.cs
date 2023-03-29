@@ -12,5 +12,6 @@ namespace StoriesTranslationServices.Models
     public int ServerPort { get; set; }
     public string ApiKey { get; set; } = string.Empty;
     public bool UseApiKey { get; set; } = false;
+    public List<string>? SupportedLanguages { get; set; } = new List<string>();
   }
 }

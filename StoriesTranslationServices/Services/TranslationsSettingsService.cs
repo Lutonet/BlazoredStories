@@ -1,11 +1,12 @@
 ﻿using StoriesTranslationServices.Models;
-using StoriesTranslationServices.Models.Helpers;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using ToolsLibrary.Models;
 
 namespace StoriesTranslationServices.Services
 {
@@ -35,13 +36,13 @@ namespace StoriesTranslationServices.Services
         }
         catch (Exception ex)
         {
-          response.Success = false;
-          response.Error = ex.Message;
+          response.Successful = false;
+          response.ErrorMessage = ex.Message;
           return response;
         }
       }
-      response.Success = false;
-      response.Error = "File not found";
+      response.Successful = false;
+      response.ErrorMessage = "File not found";
       return response;
     }
 
@@ -56,8 +57,8 @@ namespace StoriesTranslationServices.Services
         }
         catch (Exception ex)
         {
-          result.Success = false;
-          result.Error = ex.Message;
+          result.Successful = false;
+          result.ErrorMessage = ex.Message;
           return result;
         }
       }
@@ -69,8 +70,8 @@ namespace StoriesTranslationServices.Services
       }
       catch (Exception ex)
       {
-        result.Success = false;
-        result.Error = ex.Message;
+        result.Successful = false;
+        result.ErrorMessage = ex.Message;
         return result;
       }
     }

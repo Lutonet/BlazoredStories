@@ -1,7 +1,9 @@
 ﻿@using StoriesTranslationServices.Models;
+@using ToolsLibrary.Models;
 @using StoriesTranslationServices.Services;
 @inject IStringLocalizer<TranslatorSettingsComponent> t;
 @inject ITranslationsSettingsService _settingsService;
+@inject ILibreApiService _apiService;
 
 <MudText Typo="Typo.h5" Class="text-center p-2">@t["Translator Settings"]</MudText>
 <MudDivider Class="m-2"/>
@@ -9,20 +11,75 @@
       <MudItem sm="7">
         <MudText Typo="Typo.h6" Class="text-center p-2">@t["Libre Translate servers"]</MudText>
     <MudDivider Class="m-2" />
+    <MudText Class="text-end m-3" Style="color:green font-weight: bold"><MudLink><MudIcon Icon="@Icons.Material.Filled.Add" onclick="@(()=> AddServer())"></MudIcon></MudLink></MudText>
+    <MudSimpleTable Dense="true" Bordered="false" Striped="true" Style="overflow-x: auto;" Class="w-100">
+       <MudTHeadRow>
+            
+                <MudTh>@t["Server address"]</MudTh>
+                <MudTh Style="width: 100px">@t["Port"]</MudTh>
+                <MudTh>@t["Use API key"]</MudTh>
+                <MudTh>@t["API key"]</MudTh>
+                <MudTh></MudTh>
+                <MudTh></MudTh>
+        </MudTHeadRow>
     @if(settings.Servers is not null && settings.Servers.Count > 0)
     {
-      int i = 0;
-      foreach (var server in settings.Servers)
+       
+      
+      @foreach (var server in settings.Servers)
       {
-        servers.Add(server);
+       
+        <MudTr>
+            <MudTd>
+                <MudTextField @bind-Value="@server.ServerAddress" T="string" Label=@t["Server address"] />
+            </MudTd>
+            <MudTd>
+              <MudTextField @bind-Value="@server.ServerPort" T="int" Label=@t["Port"] />
+            </MudTd>
+             <MudTd>
+              <MudCheckBox @bind-Checked="@server.UseApiKey"></MudCheckBox>
+            </MudTd>
+             <MudTd>
+              <MudTextField @bind-Value="@server.ApiKey" T="string" Label=@t["API key"] />
+            </MudTd>
+             <MudTd Class="text-center">
+              <MudLink><MudIcon Icon="@Icons.Material.Filled.DeleteForever" Style="color:red" @onclick="@(()=> RemoveServer(server))"></MudIcon></MudLink>
+            </MudTd>
+            <MudTd Class="text-center">
+              <MudLink><MudIcon @onclick="@(async () => await TestConnectionAsync(server))" Icon="@Icons.Material.Filled.ConnectWithoutContact" Style="color:blue"></MudIcon></MudLink>
+            </MudTd>
+        </MudTr>
         // add inputs for server
-        <MudTextField T="string" @bind-value="@servers[i].ServerAddress"></MudTextField>
-        i++;
+        
+        
       }
+
     }
+  </MudSimpleTable>
+  <MudDivider Class="mt-3 mb-3" />
+  <MudTextField @bind-Value="@settings.TranslationFolderPath" Typo="Typo.h6" Class="text-center p-2" T="string" Label="@t["Translations directory"]"></MudTextField>
+    <MudSelect T="string" @bind-Value="@settings.SourceLanguageCode" Label="@t["Select source language for translations"]" AnchorOrigin="Origin.BottomCenter">
+      @foreach(var language in languagesInFolder)
+      {
+        <MudSelectItem Value="@language">@language</MudSelectItem>
+      }
+    </MudSelect>
+    <MudSelect T="string" @bind-Value="value" @bind-SelectedValues="options" MultiSelection="true" Label="@t["Select languages excluded from automatic UI translation"]" AnchorOrigin="Origin.BottomCenter">
+      @foreach (var language in languagesInFolder)
+      {
+        @if (language != settings.SourceLanguageCode)
+        {
+            <MudSelectItem Value="@language">@language</MudSelectItem>
+        }
+      }
+    </MudSelect>
+    <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false" OnClick="@(async () => await Save())">@t["Save"]</MudButton>
   </MudItem>
       <MudItem sm="5">
-
+    @foreach(var report in reports)
+    {
+      <ReportComponent Report="@report" />
+    }
       </MudItem>
   </MudGrid>
 
@@ -31,13 +88,115 @@
 @code {
 
   private Settings settings = new();
+  private string value = "Nothing selected";
+  private List<string> IgnoredLanguages;
+  private string translationsDirectory;
+  private List<string> languagesInFolder = new();
   private List<LibreTranslateServer> servers = new();
+  private List<Report> reports = new();
+  private IEnumerable<string> options { get; set; } = new HashSet<string>() { "cs" };
+
+
   protected override async Task OnInitializedAsync()
   {
-    StoriesTranslationServices.Models.Helpers.ApiResponse<Settings> apiResponse = await _settingsService.GetSettingsAsync();
-    if (apiResponse.Success)
+      ApiResponse<Settings> apiResponse = await _settingsService.GetSettingsAsync();
+    if (apiResponse.Successful)
       settings = apiResponse.Data;
+    string workingDirectory = Environment.CurrentDirectory;
+    string projectDirectory = Directory.GetParent(workingDirectory).FullName;
+    translationsDirectory = Path.Combine(projectDirectory, "StoriesI18n", "I18n");
+    if (settings.TranslationFolderPath == null || settings.TranslationFolderPath == string.Empty)
+      settings.TranslationFolderPath = translationsDirectory;
+    var langsInFolder = Directory.GetFiles(translationsDirectory);
+    foreach(var lng in langsInFolder)
+    {
+
+      var tmp = lng.Split("\\");
+      tmp = tmp.Last().Split(".");
+      languagesInFolder.Add(tmp.First());
+    }
+    StateHasChanged();
     await base.OnInitializedAsync();
+  }
+  public void AddServer()
+  {
+    if (settings.Servers is null)
+      settings.Servers = new();
+
+    settings.Servers.Add(new());
+    StateHasChanged();
+  }
+  public void RemoveServer(LibreTranslateServer server)
+  {
+    settings.Servers.Remove(server);
+    StateHasChanged();
+  }
+
+  public async Task TestConnectionAsync(LibreTranslateServer server)
+  {
+    ApiResponse<string> response = new();
+    response = await _apiService.TestConnectionAsync(server);
+    if (response.Successful)
+      reports.Add(new Report()
+        {
+          Type = ReportTypes.success,
+          Text = t["found"]+" " + response.Data +" "+ t["languages"]
+        });
+    else
+      reports.Add(new Report()
+        {
+          Type = ReportTypes.error,
+          Text = response.ErrorMessage
+      });
+
+    // create list of supported languages
+    List<LibreTranslateLanguage> supportedLanguages = new();
+    var answer = await _apiService.GetListOfLanguagesAsync(server);
+    if (answer.Successful)
+    {
+      server.SupportedLanguages = new();
+      foreach(var language in answer.Data)
+      {
+        server.SupportedLanguages.Add(language.Code);
+      }
+
+      reports.Add(new Report()
+        {
+          Type = ReportTypes.info,
+          Text = t["Languages list from server"] + server.ServerAddress + t["received successfuly"]
+        });
+    }
+    else
+    {
+      reports.Add(new Report()
+        {
+          Type = ReportTypes.error,
+          Text = answer.ErrorMessage
+        });
+    }
+
+  }
+
+  public async Task Save()
+  {
+    settings.IgnoredLanguageCodes = options.ToList();
+     ApiResponse<string> response = await _settingsService.SaveSettingsAsync(settings);
+    if (response.Successful)
+    {
+      reports.Add(new Report()
+      {
+        Type = ReportTypes.success,
+        Text = "Saved"
+      });
+    }
+    else
+    {
+      reports.Add(new Report()
+        {
+          Type = ReportTypes.error,
+          Text = response.ErrorMessage
+        });
+    }
   }
 
 }

@@ -10,11 +10,11 @@
     </MudItem>
     <MudItem sm="10">
 
-<MudText Typo="Typo.h5" Class="text-center m-3">@t["Settings"]</MudText>
+<MudText Typo="Typo.h5" Class="text-center mb-3">@t["Settings"]</MudText>
 <MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
   <MudTabPanel Text=@t["Application Settings"] >
       <MudPaper Elevation="2" Class="p-3 m-5">
-          <SettingsComponent />
+          <ApplicationSettingsComponent />
       </MudPaper>
   </MudTabPanel>
   <MudTabPanel Text=@t["Translator Settings"]>
@@ -22,6 +22,11 @@
           <TranslatorSettingsComponent />
         </MudPaper>
   </MudTabPanel>
+      <MudTabPanel Text=@t["Libretranslate tools"]>
+        <MudPaper Elevation="2" Class="p-3 m-5">
+          <LibreTranslateComponent />
+        </MudPaper>
+      </MudTabPanel>
   <MudTabPanel Text=@t["Statistics"]>
         <MudPaper Elevation="2" Class="p-3 m-5">
           <StatisticsComponent />

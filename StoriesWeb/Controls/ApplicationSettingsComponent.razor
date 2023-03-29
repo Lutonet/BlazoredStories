@@ -1,6 +1,7 @@
 ﻿@using MailKit.Security;
 
 @using StoriesWeb.Models.Dto;
+@using ToolsLibrary.Models;
 @using StoriesWeb.Services;
 @using System.ComponentModel.DataAnnotations;
 @using System.Text.RegularExpressions;
@@ -16,14 +17,14 @@
         <MudDivider Class="mt-2"/>
         <MudGrid>
             <MudItem xs="12" sm="6" Class="pa-3 mt-3">
-                <MudTextField T="string" @bind-value="@model.ApplicationName" Label=@t["Application Name"] Required="true" RequiredError=@t["Application name is required"] />
+                <MudTextField T="string" @bind-Value="@model.ApplicationName" Label=@t["Application Name"] Required="true" RequiredError=@t["Application name is required"] />
                 <MudCheckBox @bind-Checked="@model.TranslateName" Size="Size.Medium" Color="Color.Primary">@t["Translate application name"]</MudCheckBox>
-        <MudTextField T="string" @bind-value="@model.ApplicationUrl" Label=@t["Application URL"] Required="true" RequiredError=@t["Application URL is required"] />
+        <MudTextField T="string" @bind-Value="@model.ApplicationUrl" Label=@t["Application URL"] Required="true" RequiredError=@t["Application URL is required"] />
                 <MudDivider Class="mt-2" />
                 <MudText Typo="Typo.h5" Class="text-center m-2">@t["SMTP Settings"]</MudText>
                 <MudDivider Class="mt-2" />
-                <MudTextField T="string" @bind-value="@model.SmtpServer" Label=@t["SMTP Server"] Required="true" RequiredError=@t["SMTP server is required"] />
-                <MudNumericField T="int" @bind-value="@model.SmtpPort" Label=@t["SMTP Port"] Required="true" RequiredError=@t["SMTP port is required"] InputType="InputType.Number"/>            
+                <MudTextField T="string" @bind-Value="@model.SmtpServer" Label=@t["SMTP Server"] Required="true" RequiredError=@t["SMTP server is required"] />
+                <MudNumericField T="int" @bind-Value="@model.SmtpPort" Label=@t["SMTP Port"] Required="true" RequiredError=@t["SMTP port is required"] InputType="InputType.Number"/>            
                 <MudTextField T="string" @bind-Value="@model.EmailFrom" Label=@t["Application Email"] Required="true" RequiredError=@t["Application Email is required"] InputType="InputType.Email" />
                 <MudSelect T="SecureSocketOptions" Label=@t["SMTP Security"] @bind-Value="@model.SecureSocketOptions" AnchorOrigin="Origin.BottomCenter">
                     <MudSelectItem Value="@SecureSocketOptions.Auto" />
@@ -67,10 +68,14 @@
               </MudAlert>
             </div>
           }
+          @if (isFirstRun == false&& showSecondForm == true)
+          {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@(async () => await RegisterAdmin())">@t["Save"]</MudButton>
+          }
         </MudPaper>
             </MudItem>
             <MudItem xs="12" sm="6" Class="pa-3 mt-3">
-                @if (showSuccess)
+                @if (showSuccess&& isFirstRun)
         {
           <MudTextField T="string" @bind-value="@model.Email" Label=@t["Email"] Required="true" RequiredError=@t["Email is required"] Validation="@(new EmailAddressAttribute() {ErrorMessage = $"{t["The email address is invalid"]}" })" />
           <MudTextField T="string" @bind-value="@model.Password" Label=@t["Password"] @ref="pwd" Required="true" RequiredError=@t["Password is required"] Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" InputType="InputType.Password" />
@@ -130,6 +135,7 @@
   string[] errors = { };
   MudTextField<string> pwd;
   MudForm settingsForm;
+  bool isFirstRun = false;
   bool showError = false;
   bool testing = false;
   public List<Country> countries = new();
@@ -137,7 +143,7 @@
   bool showSecondForm = false;
   string errorMessage = string.Empty;
   string passwordCheck = string.Empty;
-  InstallationDto model = new InstallationDto();
+  InstallationDto model;
 
   private IEnumerable<string> PasswordStrength(string pw)
   {
@@ -154,6 +160,29 @@
       yield return t["Password must contain at least one lowercase letter"];
     if (!Regex.IsMatch(pw, @"[0-9]"))
       yield return t["Password must contain at least one digit"];
+  }
+  protected override async Task OnInitializedAsync()
+  {
+    if (!await _context.Users.AnyAsync())
+    {
+      isFirstRun = true;
+      model = new(); 
+    }
+    else
+    {
+      ApplicationSetup setup = await _context.ApplicationSetups.FirstOrDefaultAsync();
+      model = new();
+      model.SmtpPort = setup.SmtpPort;
+      model.SmtpServer = setup.SmtpServer;
+      model.SmtpUser = setup.SmtpUser;
+      model.SmtpPassword = setup.SmtpPassword;
+      model.SecureSocketOptions = setup.SecureSocketOptions;
+      model.ApplicationName = setup.Name;
+      model.ApplicationUrl = setup.ApplicationUrl;
+      model.TranslateName = setup.TranslateName;
+      StateHasChanged();
+    }
+    await base.OnInitializedAsync();
   }
 
   private string PasswordMatch(string arg)
@@ -188,9 +217,11 @@
       if (appResult.Successful)
       {
         reports.Add(new Report { Type = ReportTypes.success, Text = t["Application settings created"] });
-        reports.Add(new Report { Type = ReportTypes.info, Text = t["Creating administrator"] });
+        if (isFirstRun)
+        {
+          reports.Add(new Report { Type = ReportTypes.info, Text = t["Creating administrator"] });
 
-        AdministratorDto newUser = new()
+          AdministratorDto newUser = new()
           {
             DisplayedName = model.DisplayedName,
             FirstName = model.FirstName,
@@ -201,23 +232,24 @@
             CountryId = model.CountryId,
             Picture = model.Picture
           };
-        ApiResponse<string> userResult = await _service.CreateAdministrator(newUser);
-        if (userResult.Successful)
+          ApiResponse<string> userResult = await _service.CreateAdministrator(newUser);
+          if (userResult.Successful)
+          {
+            reports.Add(new Report { Type = ReportTypes.success, Text = t["All done"] });
+            StateHasChanged();
+            Thread.Sleep(2000);
+            _navigator.NavigateTo("/");
+          }
+          else
+          {
+            reports.Add(new Report { Type = ReportTypes.error, Text = userResult.ErrorMessage });
+          }
+        }
+        if (!appResult.Successful)
         {
-          reports.Add(new Report { Type = ReportTypes.success, Text = t["All done"] });
+          reports.Add(new Report { Type = ReportTypes.error, Text = appResult.ErrorMessage });
+        }
           StateHasChanged();
-          Thread.Sleep(2000);
-          _navigator.NavigateTo("/");
-        }
-        else
-        {
-          reports.Add(new Report { Type = ReportTypes.error, Text = userResult.ErrorMessage });
-        }
-        StateHasChanged();
-      }
-      else
-      {
-        reports.Add(new Report { Type = ReportTypes.error, Text = appResult.ErrorMessage });
       }
       //try to register user
       StateHasChanged();
@@ -236,8 +268,20 @@
     {
       showError = false;
       showSuccess = true;
-      showSecondForm = true;
-      await GetCountries();
+      if (!await _context.Users.AnyAsync())
+      {
+
+      }
+      else
+      {
+        showSecondForm = true;
+        if (isFirstRun == false)
+        {
+          
+        }
+        else 
+            await GetCountries();
+      }
 
     }
     else

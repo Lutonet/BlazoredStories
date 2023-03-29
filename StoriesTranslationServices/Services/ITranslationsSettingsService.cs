@@ -1,5 +1,5 @@
 ﻿using StoriesTranslationServices.Models;
-using StoriesTranslationServices.Models.Helpers;
+using ToolsLibrary.Models;
 
 namespace StoriesTranslationServices.Services
 {
@@ -9,7 +9,9 @@ namespace StoriesTranslationServices.Services
     string FilePath { get; set; }
 
     Task<ApiResponse<Settings>> GetSettingsAsync();
+
     Task<ApiResponse<string>> SaveSettingsAsync(Settings settings);
+
     bool SettingsExist();
   }
 }

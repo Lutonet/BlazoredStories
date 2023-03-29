@@ -19,6 +19,7 @@ namespace StoriesWeb.Services
       LibreLanguages.Add(new LanguageModel() { Code = "fr", Name="French", Flag="https://flagcdn.com/w320/fr.png" });
       LibreLanguages.Add(new LanguageModel() { Code = "de", Name="German", Flag="https://flagcdn.com/w320/de.png" });
       LibreLanguages.Add(new LanguageModel() { Code = "el", Name="Greek", Flag="https://flagcdn.com/w320/gr.png" });
+      LibreLanguages.Add(new LanguageModel() { Code = "il", Name="Hebrew", Flag="https://flagcdn.com/w320/il.png" });
       LibreLanguages.Add(new LanguageModel() { Code = "hi", Name="Hindi", Flag="https://flagcdn.com/w320/in.png" });
       LibreLanguages.Add(new LanguageModel() { Code = "hu", Name="Hungarian", Flag="https://flagcdn.com/w320/hu.png" });
       LibreLanguages.Add(new LanguageModel() { Code = "id", Name="Indonesian", Flag="https://flagcdn.com/w320/id.png" });

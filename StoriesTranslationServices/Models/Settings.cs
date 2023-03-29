@@ -10,6 +10,7 @@ namespace StoriesTranslationServices.Models
   {
     public string TranslationFolderPath { get; set; }
     public string SourceLanguageCode { get; set; }
+
     public List<string> IgnoredLanguageCodes { get; set; }
     public List<LibreTranslateServer> Servers { get; set; }
   }
