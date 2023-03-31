@@ -64,6 +64,7 @@ namespace StoriesWeb
       builder.Services.AddTransient<IEmailService, EmailService>();
       builder.Services.AddTransient<IHelperService, HelperService>();
       builder.Services.AddTransient<I18nMiddleware>();
+      builder.Services.AddTransient<IHttpTaskService, HttpTaskService>();
       builder.Services.AddTransient<IStringLocalizerFactory, JsonStringLocalizerFactory>();
       builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<UserModel>>();
       builder.Services.AddTransient<ILibreApiService, LibreApiService>();

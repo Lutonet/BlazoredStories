@@ -1,5 +1,4 @@
-﻿using Humanizer;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using static StoriesWeb.Tools.Settings;
 
 namespace StoriesWeb.Models.Dto

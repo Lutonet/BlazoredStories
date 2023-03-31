@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoriesWeb", "StoriesWeb\St
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoriesTranslationServices", "StoriesTranslationServices\StoriesTranslationServices.csproj", "{9087BAD0-16DE-4668-948E-036EAEA71345}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToolsLibrary", "ToolsLibrary\ToolsLibrary.csproj", "{86C3B472-FEC6-4031-8E5B-7B61BD65FE47}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ToolsLibrary", "ToolsLibrary\ToolsLibrary.csproj", "{86C3B472-FEC6-4031-8E5B-7B61BD65FE47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

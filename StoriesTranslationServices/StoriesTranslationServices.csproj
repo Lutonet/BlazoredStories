@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\Helpers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\ToolsLibrary\ToolsLibrary.csproj" />
   </ItemGroup>
 

@@ -5,140 +5,24 @@
 @inject ITranslationsSettingsService _settings;
 @inject ILibreApiService _api;
 
-<MudGrid>
-<MudItem sm="7">
-<MudPaper Elevation="3" Class="p-3">
-<MudText Typo="Typo.h5" Class="mb-3">@t["Libretranslate tools"]</MudText>
-<MudSelect T="string" @bind-Value="@serverAddress" Label="@t["Select the server"]" AnchorOrigin="Origin.BottomCenter">
-    @foreach(var ser in settings.Servers)
-        {
-          <MudSelectItem Value="@ser.ServerAddress">@ser.ServerAddress</MudSelectItem>
-        }
-      </MudSelect>
-      <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false"  OnClick="@(async () => await GetLanguages())">@t["Get available languages"]</MudButton>
-      <MudDivider Class="mt-2 mb-2" />
-      @if (showLog)
-      {
-      <MudSelect T="string" @bind-Value="@sourceLanguage" Label="@t["Select the source language"]" Class="small" AnchorOrigin="Origin.BottomCenter">
-        @foreach (var lng in languages)
-        {
-          <MudSelectItem Value="@lng.Code">@lng.Name</MudSelectItem>
-        }
-      </MudSelect>
-        
-<MudTextField T="string" Label=@t["Text to translate"] Lines="5" @bind-Value="TextSource">hah</MudTextField>
-      <MudSelect T="string" @bind-Value="@targetLanguage" Label="@t["Select the target language"]" Class="small" AnchorOrigin="Origin.BottomCenter">
-        @foreach (var lng in languages)
-        {
-          <MudSelectItem Value="@lng.Code">@lng.Name</MudSelectItem>
-        }
-        </MudSelect>
-        if (sourceLanguage is not null && targetLanguage is not null)
-        {
-          <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" DisableElevation="false" OnClick="@(async () => await Translate())">@t["Translate"]</MudButton>
-        }
-      }
-
-</MudPaper>
-
-</MudItem> 
-<MudItem sm="5">
-    @if(showTranslation)
-    {
-      <MudPaper Elevation="2" Class="p-3">
-          <MudText Typo="Typo.h5" Class="text-center m-3">@t["Translation"]</MudText>
-          <MudText>@translatedText</MudText>
-
-      </MudPaper>
-    }
-    <MudPaper Elevation="3" Class="p-3">
-        @if (reports.Count > 0)
-      {
-        foreach(var report in reports)
-        {
-          <ReportComponent Report="@report" />
-        }
-      }
-      @if (showLog)
-      {
-        <MudText Typo="Typo.h6" Class="m-3 text-center">@t["found"]&nbsp;@languages.Count&nbsp;@t["languages"] </MudText>
-       
-      }
+<MudTabs Elevation="4" Rounded="true" Centered="true" Color="@Color.Primary">
+  <MudTabPanel Text=@t["Test server"]>
+    <MudPaper Elevation="2" Class="p-3 m-5">
+    <SingleServerChecks />
     </MudPaper>
-</MudItem>
-</MudGrid>
+  </MudTabPanel>
+  <MudTabPanel Text=@t["Test service"]>
+    <MudPaper Elevation="2" Class="p-3 m-5">
+      <LibreServiceComponent />
+    </MudPaper>
+  </MudTabPanel>
+  <MudTabPanel Text=@t["Manual control"]>
+    <MudPaper Elevation="2" Class="p-3 m-5">
+      Manually controlling
+    </MudPaper>
+  </MudTabPanel>
+</MudTabs>
+
 @code {
-  private string TextSource = string.Empty;
-  private string translatedText = string.Empty;
-  private bool showTranslation = false;
-  public ApiResponse<Settings> ApiResult;
-  public Settings settings = new();
-  List<LibreTranslateLanguage> languages = new();
-  private LibreTranslateServer server = new();
-  private List<Report> reports = new();
-  private List<LibreTranslateLanguage> langs = new();
-  private bool showLog = false;
-  private string serverAddress;
-  private string sourceLanguage;
-  private string targetLanguage;
 
-  public async Task GetLanguages()
-  {
-    server = settings.Servers.Where(s => s.ServerAddress == serverAddress).FirstOrDefault();
-    var langus = await _api.GetListOfLanguagesAsync(server);
-    if (langus.Data != null && langus.Data.Count > 0)
-    {
-      langs = langus.Data;
-      showLog = true;
-      languages = new();
-      foreach (var lng in langs)
-      {
-        LibreTranslateLanguage newLanguage = new()
-          {
-            Code = lng.Code,
-            Name = t[lng.Name]
-          };
-        languages.Add(newLanguage);
-      }
-      languages = languages.OrderBy(s => s.Name).ToList();
-    }
-
-  }
-
-  public async Task Translate()
-  {
-    TranslateRequest request = new()
-      {
-        SourceLanguageCode = sourceLanguage,
-        TargetLanguageCode = targetLanguage,
-        TextToTranslate = TextSource,
-        IsHtml = false
-      };
-    var result = await _api.TranslateAsync(request, server);
-    if (result.Successful)
-    {
-      showTranslation = true;
-      translatedText = result.Data;
-    }
-  }
-
-  protected override async Task OnInitializedAsync()
-  {
-      settings.Servers = new();
-    try
-    {
-      ApiResult = await _settings.GetSettingsAsync();
-      settings = ApiResult.Data;
-
-    }
-    catch(Exception ex)
-    {
-      reports.Add(new Report()
-        {
-          Text = ex.Message,
-          Type = ReportTypes.error
-      });
-    }
-      base.OnInitializedAsync();
-  }
 }
